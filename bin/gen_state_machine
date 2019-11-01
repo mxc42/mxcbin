@@ -1,0 +1,152 @@
+#!/usr/bin/python3
+
+# Generates a C file for a state machine
+# @arg1 the name of the state machine file
+# @arg[2:] list of states
+
+import sys
+
+state_post = '_st'
+
+name = str(sys.argv[1])
+print('name:', name)
+states = sys.argv[2:]
+
+for x in states:
+    print('state:', x)
+
+h_str = ''
+c_str = ''
+
+h_str = h_str + '''/*
+ * '''
+h_str = h_str + name + '.h'
+h_str = h_str + '''
+ *
+ */
+
+#ifndef '''
+h_str = h_str + name.upper()
+h_str = h_str + '''_H_
+#define '''
+h_str = h_str + name.upper()
+h_str = h_str + '''_H_
+
+// Standard tick function.
+void '''
+h_str = h_str + name
+h_str = h_str + '''_tick();
+
+// Call this before you call '''
+h_str = h_str + name
+h_str = h_str + '''_tick().
+void '''
+h_str = h_str + name
+h_str = h_str + '''_init();
+
+#endif /* '''
+h_str = h_str + name.upper()
+h_str = h_str + '''_H_ */
+
+'''
+
+c_str = c_str + '''/*
+ * '''
+c_str = c_str + name + '.c'
+c_str = c_str + '''
+ *
+ */
+'''
+c_str = c_str + '''
+#include <stdint.h>
+#include <stdio.h>
+#include \"'''
+c_str = c_str + name
+c_str = c_str + '''.h\"
+
+// States for the controller state machine.
+'''
+
+c_str = c_str + 'enum ' + name + state_post + '_t {\n'
+for state in states[:-1]:
+    c_str = c_str + '\t' + state + state_post + ',\n'
+c_str = c_str + '\t' + states[-1] + state_post + '\n'
+c_str = c_str + '} currentState;\n'
+
+c_str = c_str + '''
+void debugStatePrint() {
+\tstatic ticTacToeControl_st_t previousState;
+\tstatic bool firstPass = true;
+\t// Only print the message if:
+\t// 1. This the first pass and the value for previousState is unknown.
+\t// 2. previousState != currentState - this prevents reprinting the same state name over and over.
+\tif (previousState != currentState || firstPass) {
+\t\tfirstPass = false;            // previousState will be defined, firstPass is false.
+\t\tpreviousState = currentState; // keep track of the last state that you were in.
+\t\tswitch (currentState) { // This prints messages based upon the state that you were in.
+'''
+for state in states:
+    c_str = c_str + '\t\tcase ' + state + state_post + ':\n'
+    c_str = c_str + '\t\t\tprintf(\"' + state + state_post + '\\n\\r\");\n'
+    c_str = c_str + '\t\t\tbreak;\n'
+
+c_str = c_str + '''
+        }
+    }
+}
+'''
+
+c_str = c_str + '''
+// init function for the state machine
+void '''
+c_str = c_str + name + '''_init() {
+	currentState = init_st; // set currentState to init_st
+}
+
+void '''
+c_str = c_str + name + '''_tick() {
+	//debugStatePrint(); // print each state as it transitions
+
+	// Perform state transition first.
+	switch(currentState) { // switch statement with the currentState variable
+'''
+for state in states:
+    c_str = c_str + '\tcase ' + state + state_post + ':\n'
+    c_str = c_str + '\t\tbreak;\n'
+c_str = c_str + '''
+	default:
+		// display a message if the state machine transition swtch hits default (shouldn't ever happen)
+		printf(\"'''
+c_str = c_str + name
+c_str = c_str + '''_tick state update: hit default rip\\n\\r\"); 
+		break;
+	}
+
+	// Perform state action next.
+	switch(currentState) {
+'''
+for state in states:
+    c_str = c_str + '\tcase ' + state + state_post + ':\n'
+    c_str = c_str + '\t\tbreak;\n'
+
+c_str = c_str + '''
+    default:
+        // display a message if the state machine action switch hits default (shouldn't ever happen)
+        printf(\"'''
+c_str = c_str + name
+c_str = c_str + '''_tick state action: hit default\\n\\r\"); 
+        break;
+    }
+}
+'''
+
+h_file = open('./' + name + '.h', 'w')
+c_file = open('./' + name + '.c', 'w')
+
+h_file.write(h_str);
+c_file.write(c_str);
+
+h_file.close();
+c_file.close();
+
+
