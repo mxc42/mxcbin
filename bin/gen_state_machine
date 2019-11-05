@@ -7,6 +7,7 @@
 import sys
 
 state_post = '_st'
+define_post = '_ST_STRING'
 
 name = str(sys.argv[1])
 print('name:', name)
@@ -18,14 +19,7 @@ for x in states:
 h_str = ''
 c_str = ''
 
-h_str = h_str + '''/*
- * '''
-h_str = h_str + name + '.h'
-h_str = h_str + '''
- *
- */
-
-#ifndef '''
+h_str = h_str + '#ifndef '
 h_str = h_str + name.upper()
 h_str = h_str + '''_H_
 #define '''
@@ -50,20 +44,24 @@ h_str = h_str + '''_H_ */
 
 '''
 
-c_str = c_str + '''/*
- * '''
-c_str = c_str + name + '.c'
-c_str = c_str + '''
- *
- */
-'''
-c_str = c_str + '''
-#include <stdint.h>
+c_str = c_str + '''#include <stdint.h>
 #include <stdio.h>
 #include \"'''
 c_str = c_str + name
-c_str = c_str + '''.h\"
+c_str = c_str + '.h\"\n\n'
+c_str = c_str + '// Print debug string defines\n'
 
+for state in states[:-1]:
+    c_str = c_str + '#define ' + state.upper() + define_post + ' ' + '\"' + state + state_post + '\\r\\n\"' + '\n'
+c_str = c_str + '#define ' + states[-1].upper() + define_post + ' ' + '\"' + states[-1] + state_post + '\\r\\n\"' + '\n\n'
+
+c_str = c_str + '// Other string defines\n'
+c_str = c_str + '#define ' + name.upper() + '_TICK_TRANSITION_HIT_DEFAULT \"'
+c_str = c_str + name + '_tick state transition switch hit default\\r\\n\"\n'
+c_str = c_str + '#define ' + name.upper() + '_TICK_ACTION_HIT_DEFAULT \"'
+c_str = c_str + name + '_tick state action switch hit default\\r\\n\"\n'
+
+c_str = c_str + '''
 // States for the controller state machine.
 '''
 
@@ -87,11 +85,11 @@ void debugStatePrint() {
 '''
 for state in states:
     c_str = c_str + '\t\tcase ' + state + state_post + ':\n'
-    c_str = c_str + '\t\t\tprintf(\"' + state + state_post + '\\n\\r\");\n'
+    c_str = c_str + '\t\t\tprintf(' + state.upper() + define_post + ');\n'
     c_str = c_str + '\t\t\tbreak;\n'
 
-c_str = c_str + '''        }
-    }
+c_str = c_str + '''\t\t}
+\t}
 }
 '''
 
@@ -99,43 +97,41 @@ c_str = c_str + '''
 // init function for the state machine
 void '''
 c_str = c_str + name + '''_init() {
-	currentState = init_st; // set currentState to init_st
+\tcurrentState = init_st; // set currentState to init_st
 }
 
 void '''
 c_str = c_str + name + '''_tick() {
-	//debugStatePrint(); // print each state as it transitions
+\t//debugStatePrint(); // print each state as it transitions
 
-	// Perform state transition first.
-	switch(currentState) { // switch statement with the currentState variable
+\t// Perform state transition first.
+\tswitch(currentState) { // switch statement with the currentState variable
 '''
 for state in states:
     c_str = c_str + '\tcase ' + state + state_post + ':\n'
     c_str = c_str + '\t\tbreak;\n'
 c_str = c_str + '''
-	default:
-		// display a message if the state machine transition swtch hits default (shouldn't ever happen)
-		printf(\"'''
-c_str = c_str + name
-c_str = c_str + '''_tick state update: hit default rip\\n\\r\"); 
-		break;
-	}
+\tdefault:
+\t\t// display a message if the state machine transition swtch hits default (shouldn't ever happen)
+\t\tprintf(''' + name.upper() + '_TICK_TRANSITION_HIT_DEFAULT);'
+c_str = c_str + '''
+\t\tbreak;
+\t}
 
-	// Perform state action next.
-	switch(currentState) {
+\t// Perform state action next.
+\tswitch(currentState) {
 '''
 for state in states:
     c_str = c_str + '\tcase ' + state + state_post + ':\n'
     c_str = c_str + '\t\tbreak;\n'
 
 c_str = c_str + '''
-    default:
-        // display a message if the state machine action switch hits default (shouldn't ever happen)
-        printf(\"'''
-c_str = c_str + name
-c_str = c_str + '''_tick state action: hit default\\n\\r\"); 
-        break;
-    }
+\tdefault:
+\t\t// display a message if the state machine action switch hits default (shouldn't ever happen)
+\t\tprintf(''' + name.upper() + '_TICK_ACTION_HIT_DEFAULT);'
+c_str = c_str + '''
+\t\tbreak;
+\t}
 }
 '''
 
@@ -148,4 +144,6 @@ c_file.write(c_str);
 h_file.close();
 c_file.close();
 
-
+print('')
+print('./' + name + '.h')
+print('./' + name + '.c')
