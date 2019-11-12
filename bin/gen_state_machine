@@ -9,40 +9,27 @@ import sys
 state_post = '_st'
 define_post = '_ST_STRING'
 
+h_str = ''
+c_str = ''
+
 name = str(sys.argv[1])
 print('name:', name)
+
 states = sys.argv[2:]
 
 for x in states:
     print('state:', x)
 
-h_str = ''
-c_str = ''
-
-h_str = h_str + '#ifndef '
-h_str = h_str + name.upper()
-h_str = h_str + '''_H_
-#define '''
-h_str = h_str + name.upper()
-h_str = h_str + '''_H_
+h_str = h_str + '''#ifndef {1}_H
+#define {1}_H
 
 // Standard tick function.
-void '''
-h_str = h_str + name
-h_str = h_str + '''_tick();
+void {0}_tick();
 
-// Call this before you call '''
-h_str = h_str + name
-h_str = h_str + '''_tick().
-void '''
-h_str = h_str + name
-h_str = h_str + '''_init();
+// Call this before you call {0}_tick().
+void {0}_init();
 
-#endif /* '''
-h_str = h_str + name.upper()
-h_str = h_str + '''_H_ */
-
-'''
+#endif /* {1}_H */'''.format(name, name.upper())
 
 c_str = c_str + '''#include <stdint.h>
 #include <stdio.h>
@@ -72,8 +59,11 @@ c_str = c_str + '\t' + states[-1] + state_post + '\n'
 c_str = c_str + '} currentState;\n'
 
 c_str = c_str + '''
+// Prints the name of each state as it transitions
 void debugStatePrint() {
-\tstatic ticTacToeControl_st_t previousState;
+\tstatic '''
+c_str = c_str + name
+c_str = c_str + '''_st_t previousState;
 \tstatic bool firstPass = true;
 \t// Only print the message if:
 \t// 1. This the first pass and the value for previousState is unknown.
