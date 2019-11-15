@@ -52,7 +52,7 @@ c_str = c_str + '''
 // States for the controller state machine.
 '''
 
-c_str = c_str + 'enum ' + name + state_post + '_t {\n'
+c_str = c_str + 'static enum ' + name + state_post + '_t {\n'
 for state in states[:-1]:
     c_str = c_str + '\t' + state + state_post + ',\n'
 c_str = c_str + '\t' + states[-1] + state_post + '\n'
