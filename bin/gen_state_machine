@@ -33,6 +33,7 @@ void {0}_init();
 
 c_str = c_str + '''#include <stdint.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include \"'''
 c_str = c_str + name
 c_str = c_str + '.h\"\n\n'
