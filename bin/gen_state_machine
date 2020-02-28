@@ -61,7 +61,7 @@ c_str = c_str + '} currentState;\n'
 
 c_str = c_str + '''
 // Prints the name of each state as it transitions
-void debugStatePrint() {
+static void debugStatePrint() {
 \tstatic '''
 c_str = c_str + name
 c_str = c_str + '''_st_t previousState;
