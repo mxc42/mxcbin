@@ -1,0 +1,150 @@
+#!/usr/bin/python3
+
+# Generates a CPP file for a state machine
+# @arg1 the name of the state machine file
+# @arg[2:] list of states
+
+import sys
+
+state_post = '_st'
+define_post = '_ST_STRING'
+
+h_str = ''
+c_str = ''
+
+name = str(sys.argv[1])
+print('name:', name)
+
+states = sys.argv[2:]
+
+for x in states:
+    print('state:', x)
+
+h_str = h_str + '''#ifndef {1}SM_H
+#define {1}SM_H
+
+//#define {1}_DEBUG_STATE_PRINT 1
+
+class {0}SM {{
+    public:
+     {0}SM() {{}};
+
+     // Call this before you call tick().
+     void init();
+
+     // Standard tick function.
+     void tick();
+
+    private:
+     // States for the state machine.
+     typedef enum {{
+'''.format(name, name.upper())
+
+for state in states[:-1]:
+    h_str = h_str + '      ' + state + state_post + ',\n'
+h_str = h_str + '      ' + states[-1] + state_post + '\n'
+
+h_str = h_str + '''     }} {0}SM_st_t;
+
+     {0}SM_st_t currentState = {2};
+     {0}SM_st_t previousState = {2};
+
+#ifdef {1}_DEBUG_STATE_PRINT
+     bool firstPass = true;
+     void debugStatePrint();
+#endif //{1}_DEBUG_STATE_PRINT
+
+}};
+
+#endif /* {1}SM_H */'''.format(name, name.upper(), states[0] + state_post)
+
+c_str = c_str + '''#include \"'''
+c_str = c_str + name
+c_str = c_str + 'SM.h\"\n\n'
+
+c_str = c_str + '// Other string defines\n'
+c_str = c_str + '#define ' + name.upper() + '_TICK_TRANSITION_HIT_DEFAULT \"'
+c_str = c_str + name + '_tick state transition switch hit default\\r\\n\"\n'
+c_str = c_str + '#define ' + name.upper() + '_TICK_ACTION_HIT_DEFAULT \"'
+c_str = c_str + name + '_tick state action switch hit default\\r\\n\"\n'
+
+c_str = c_str + '''
+// init function for the state machine
+void {0}SM::init() {{
+\tcurrentState = init_st; // set currentState to init_st
+}}
+
+void {0}SM::tick() {{
+#ifdef {1}_DEBUG_STATE_PRINT
+\tdebugStatePrint(); // print each state as it transitions
+#endif //{1}_DEBUG_STATE_PRINT
+
+\t// Perform state transition first.
+\tswitch(currentState) {{ // switch statement with the currentState variable
+'''.format(name, name.upper())
+for state in states:
+    c_str = c_str + '\tcase ' + state + state_post + ':\n'
+    c_str = c_str + '\t\tbreak;\n'
+c_str = c_str + '''
+\tdefault:
+\t\t// display a message if the state machine transition swtch hits default (shouldn't ever happen)
+\t\tprintf(''' + name.upper() + '_TICK_TRANSITION_HIT_DEFAULT);'
+c_str = c_str + '''
+\t\tbreak;
+\t}
+
+\t// Perform state action next.
+\tswitch(currentState) {
+'''
+for state in states:
+    c_str = c_str + '\tcase ' + state + state_post + ':\n'
+    c_str = c_str + '\t\tbreak;\n'
+
+c_str = c_str + '''
+\tdefault:
+\t\t// display a message if the state machine action switch hits default (shouldn't ever happen)
+\t\tprintf(''' + name.upper() + '_TICK_ACTION_HIT_DEFAULT);'
+c_str = c_str + '''
+\t\tbreak;
+\t}
+}
+'''
+
+c_str = c_str + '''
+#ifdef {0}_DEBUG_STATE_PRINT
+// Print debug string defines\n'''.format(name.upper())
+for state in states[:-1]:
+    c_str = c_str + '#define ' + state.upper() + define_post + ' ' + '\"' + state + state_post + '\\r\\n\"' + '\n'
+c_str = c_str + '#define ' + states[-1].upper() + define_post + ' ' + '\"' + states[-1] + state_post + '\\r\\n\"' + '\n\n'
+
+c_str = c_str + '''
+// Prints the name of each state as it transitions
+void {0}SM::debugStatePrint() {{
+\tif (previousState != currentState || firstPass) {{
+\t\tfirstPass = false;            // previousState will be defined, firstPass is false.
+\t\tpreviousState = currentState; // keep track of the last state that you were in.
+\t\tswitch (currentState) {{ // This prints messages based upon the state that you were in.
+'''.format(name)
+for state in states:
+    c_str = c_str + '\t\tcase ' + state + state_post + ':\n'
+    c_str = c_str + '\t\t\tprintf(' + state.upper() + define_post + ');\n'
+    c_str = c_str + '\t\t\tbreak;\n'
+
+c_str = c_str + '''\t\t}}
+\t}}
+}}
+#endif //{0}_DEBUG_STATE_PRINT
+'''.format(name.upper())
+
+h_file = open('./' + name + 'SM.h', 'w')
+c_file = open('./' + name + 'SM.cpp', 'w')
+
+h_file.write(h_str);
+c_file.write(c_str);
+
+h_file.close();
+c_file.close();
+
+print('')
+print('./' + name + 'SM.h')
+print('./' + name + 'SM.cpp')
